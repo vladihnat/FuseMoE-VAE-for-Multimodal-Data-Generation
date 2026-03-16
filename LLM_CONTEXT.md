@@ -52,11 +52,12 @@ This is a research MVP, not yet a full production-ready generative framework.
 
 ## Repository structure
 
-```text
+
+```
 fusemoe_gen/
 ├─ README.md
 ├─ requirements.txt
-├─ CONTEXT_LLM.md
+├─ LLM_CONTEXT.md
 ├─ smokeTest.py
 ├─ smokeFusion.py
 ├─ smokeTabDecoder.py
@@ -67,10 +68,11 @@ fusemoe_gen/
 │  ├─ raw/
 │  └─ processed/
 │     └─ synthetic_ts_tab/
-│        ├─ metadata.json
-│        ├─ train.pkl
-│        ├─ val.pkl
-│        └─ test.pkl
+|     │  └─
+|     |  ├─ metada.json
+|     |  ├─ test.pkl
+|     |  ├─ train.pkl 
+|     │  └─ val.pkl 
 ├─ src/
 │  ├─ __init__.py
 │  ├─ data/
@@ -95,21 +97,29 @@ fusemoe_gen/
 │  ├─ losses/
 │  │  ├─ __init__.py
 │  │  ├─ reconstruction.py
+│  │  ├─ total.py
 │  │  └─ kl.py
 │  ├─ training/
 │  │  ├─ __init__.py
 │  │  └─ engine.py
 └─ tests/
-   ├─ test_datasets.py
-   ├─ test_sparse_moe_fusion.py
-   ├─ test_ts_encoder.py
-   ├─ test_tabular_reconstruction.py
-   ├─ test_tabular_encoder.py
-   ├─ test_tabular_decoder.py
-   └─ test_training_engine.py
+   ├─ pytests/
+   |  ├─ test_datasets.py
+   |  ├─ test_sparse_moe_fusion.py
+   |  ├─ test_ts_encoder.py
+   |  ├─ test_tabular_reconstruction.py
+   |  ├─ test_tabular_encoder.py
+   |  ├─ test_tabular_decoder.py
+   |  └─ test_training_engine.py 
+   └─ smokes/
+      ├─ test_datasets.py
+      ├─ test_sparse_moe_fusion.py
+      ├─ test_ts_encoder.py
+      ├─ test_tabular_reconstruction.py
+      ├─ test_tabular_encoder.py
+      ├─ test_tabular_decoder.py
+      └─ test_training_engine.py 
 ```
-
-> Keep only one canonical context filename in the repo to avoid confusion: either `LLM_CONTEXT.md` or `CONTEXT_LLM.md`.
 
 ---
 
