@@ -63,11 +63,10 @@ fusemoe_gen/
 │  ├─ raw/
 │  └─ processed/
 │     └─ synthetic_ts_tab/
-|     │  └─
-|     |  ├─ metada.json
-|     |  ├─ test.pkl
-|     |  ├─ train.pkl 
-|     │  └─ val.pkl 
+|        ├─ metada.json
+|        ├─ test.pkl
+|        ├─ train.pkl 
+|        └─ val.pkl 
 ├─ src/
 │  ├─ __init__.py
 │  ├─ data/
@@ -94,9 +93,9 @@ fusemoe_gen/
 │  │  ├─ reconstruction.py
 │  │  ├─ total.py
 │  │  └─ kl.py
-│  ├─ training/
-│  │  ├─ __init__.py
-│  │  └─ engine.py
+│  └─ training/
+│     ├─ __init__.py
+│     └─ engine.py
 └─ tests/
    ├─ pytests/
    |  ├─ test_datasets.py
@@ -115,6 +114,7 @@ fusemoe_gen/
       ├─ test_tabular_decoder.py
       └─ test_training_engine.py 
 ```
+
 
 ---
 

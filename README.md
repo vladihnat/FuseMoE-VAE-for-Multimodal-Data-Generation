@@ -139,6 +139,7 @@ These components will be used during **training of the full generative model**.
 
 # Repository Structure 
 
+
 ```
 fusemoe_gen/
 ├─ README.md
@@ -149,11 +150,10 @@ fusemoe_gen/
 │  ├─ raw/
 │  └─ processed/
 │     └─ synthetic_ts_tab/
-|     │  └─
-|     |  ├─ metada.json
-|     |  ├─ test.pkl
-|     |  ├─ train.pkl 
-|     │  └─ val.pkl 
+|        ├─ metada.json
+|        ├─ test.pkl
+|        ├─ train.pkl 
+|        └─ val.pkl 
 ├─ src/
 │  ├─ __init__.py
 │  ├─ data/
@@ -180,9 +180,9 @@ fusemoe_gen/
 │  │  ├─ reconstruction.py
 │  │  ├─ total.py
 │  │  └─ kl.py
-│  ├─ training/
-│  │  ├─ __init__.py
-│  │  └─ engine.py
+│  └─ training/
+│     ├─ __init__.py
+│     └─ engine.py
 └─ tests/
    ├─ pytests/
    |  ├─ test_datasets.py
