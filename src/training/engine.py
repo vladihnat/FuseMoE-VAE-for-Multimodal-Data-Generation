@@ -3,7 +3,7 @@ from typing import Dict, Iterable, Optional
 import torch
 import torch.nn as nn
 
-from losses.reconstruction import tabular_reconstruction_loss
+from losses.reconstruction import tabular_reconstruction_loss, timeseries_reconstruction_loss
 from losses.total import multimodal_vae_total_loss
 
 
@@ -20,6 +20,7 @@ def compute_mvp_losses(
     lambda_balance: float = 1.0,
     numeric_loss: str = "mse",
 ) -> Dict[str, torch.Tensor]:
+    # 1. Compute Tabular Loss
     recon = tabular_reconstruction_loss(
         target_num=batch.get("tab_num"),
         pred_num=model_out["tabular_decoder"]["tab_num_recon"],
@@ -28,8 +29,22 @@ def compute_mvp_losses(
         numeric_loss=numeric_loss,
     )
 
+    # 2. Compute Time-Series Loss (if the decoder was used)
+    ts_loss = torch.tensor(0.0, device=recon["total"].device)
+    if model_out.get("ts_decoder") is not None:
+        ts_loss = timeseries_reconstruction_loss(
+            pred_values=model_out["ts_decoder"]["ts_recon"],
+            target_values=batch["ts_values"],
+            mask=batch.get("ts_mask"),
+            loss_type=numeric_loss,
+        )
+
+    # Combine both modalities for the global reconstruction loss
+    total_reconstruction_loss = recon["total"] + ts_loss
+
+    # 3. Compute Total VAE Loss
     total = multimodal_vae_total_loss(
-        reconstruction_loss=recon["total"],
+        reconstruction_loss=total_reconstruction_loss,
         kl_loss=model_out["losses"]["kl"],
         balance_loss=model_out["losses"]["balance_loss"],
         beta=beta,
@@ -39,6 +54,7 @@ def compute_mvp_losses(
     return {
         "num_reconstruction": recon["num_loss"],
         "cat_reconstruction": recon["cat_loss"],
+        "ts_reconstruction": ts_loss,  # Added TS loss to the output dictionary
         "reconstruction": total["reconstruction"],
         "kl": total["kl"],
         "balance": total["balance"],

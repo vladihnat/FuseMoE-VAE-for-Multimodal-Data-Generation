@@ -29,24 +29,44 @@ class MultimodalVAE(nn.Module):
         self.kl_reduction = kl_reduction
 
     def forward(self, batch: Dict[str, torch.Tensor], deterministic: bool = False) -> Dict[str, object]:
+        # 1. Time-Series Encoding
         ts_out = self.ts_encoder(
             values=batch["ts_values"],
             mask=batch["ts_mask"],
             times=batch["ts_times"],
         )
+        
+        # 2. Tabular Encoding (Using positional arguments based on our smoke tests)
         tab_out = self.tabular_encoder(
-            x_num=batch.get("tab_num"),
-            x_cat=batch.get("tab_cat"),
+            batch.get("tab_num"),
+            batch.get("tab_cat"),
         )
+        
+        # Safely extract tabular embedding (handles "embedding" or "pooled" keys)
+        tab_emb = tab_out.get("embedding", tab_out.get("pooled"))
+
+        # 3. Fusion
         fused = self.fusion({
             "ts": ts_out["pooled"],
-            "tab": tab_out["pooled"],
+            "tab": tab_emb,
         })
+        
+        # 4. Posterior Head
         post = self.posterior(fused["pooled"], deterministic=deterministic)
 
+        # 5. Tabular Decoding
         tab_decoded = self.tabular_decoder(post["z"])
-        ts_decoded = self.ts_decoder(post["z"]) if self.ts_decoder is not None else None
+        
+        # 6. Time-Series Decoding (CRITICAL FIX: Pass the target_times)
+        if self.ts_decoder is not None:
+            ts_decoded = self.ts_decoder(
+                z=post["z"], 
+                target_times=batch.get("ts_times")
+            )
+        else:
+            ts_decoded = None
 
+        # 7. KL Loss
         kl = kl_standard_normal(post["mu"], post["logvar"], reduction=self.kl_reduction)
 
         return {
@@ -58,7 +78,7 @@ class MultimodalVAE(nn.Module):
             "ts_decoder": ts_decoded,
             "losses": {
                 "kl": kl,
-                "balance_loss": fused["balance_loss"],
+                "balance_loss": fused.get("balance_loss", torch.tensor(0.0, device=post["z"].device)),
             },
         }
 

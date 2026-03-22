@@ -80,4 +80,62 @@ def tabular_reconstruction_loss(
     }
 
 
-__all__ = ["tabular_reconstruction_loss"]
+def timeseries_reconstruction_loss(
+    pred_values: torch.Tensor,
+    target_values: torch.Tensor,
+    mask: Optional[torch.Tensor] = None,
+    reduction: Reduction = "mean",
+    loss_type: Literal["mse", "l1"] = "mse",
+) -> torch.Tensor:
+    """Compute reconstruction loss for irregular time-series data.
+    
+    Args:
+        pred_values: Predicted values of shape (batch, seq_len, dim).
+        target_values: Ground truth values of shape (batch, seq_len, dim).
+        mask: Optional boolean or float mask of shape (batch, seq_len) or (batch, seq_len, dim).
+              1.0 indicates an observed value, 0.0 indicates missing/padded.
+        reduction: "mean" or "sum".
+        loss_type: "mse" or "l1".
+    """
+    if pred_values.shape != target_values.shape:
+        raise ValueError(
+            f"pred_values and target_values must have the same shape, "
+            f"got {tuple(pred_values.shape)} and {tuple(target_values.shape)}"
+        )
+
+    # Compute unreduced loss
+    if loss_type == "mse":
+        loss = F.mse_loss(pred_values, target_values, reduction="none")
+    elif loss_type == "l1":
+        loss = F.l1_loss(pred_values, target_values, reduction="none")
+    else:
+        raise ValueError(f"Unsupported loss_type: {loss_type}")
+
+    # Apply mask if provided
+    if mask is not None:
+        if mask.dim() == 2:
+            # Expand (batch, seq_len) to (batch, seq_len, dim)
+            mask = mask.unsqueeze(-1).expand_as(loss)
+        elif mask.shape != loss.shape:
+            raise ValueError(
+                f"mask must have shape {tuple(loss.shape)} or (batch, seq_len); "
+                f"got {tuple(mask.shape)}"
+            )
+        
+        # Zero out loss where mask is 0
+        loss = loss * mask.float()
+
+        if reduction == "mean":
+            # Compute mean only over the observed elements
+            num_observed = mask.sum().clamp_min(1.0)
+            return loss.sum() / num_observed
+        elif reduction == "sum":
+            return loss.sum()
+    
+    # If no mask, standard reduction applies
+    if reduction == "mean":
+        return loss.mean()
+    return loss.sum()
+
+
+__all__ = ["tabular_reconstruction_loss", "timeseries_reconstruction_loss"]
