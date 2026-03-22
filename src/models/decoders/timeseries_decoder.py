@@ -77,9 +77,10 @@ class TSIrregularDecoder(nn.Module):
         return torch.cat([out_linear, out_periodic], dim=-1)
 
     def forward(
-        self, 
-        z: torch.Tensor, 
-        target_times: Optional[torch.Tensor] = None
+        self,
+        z: torch.Tensor,
+        target_times: Optional[torch.Tensor] = None,
+        query_times: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:
         """
         Args:
@@ -97,13 +98,14 @@ class TSIrregularDecoder(nn.Module):
 
         batch_size = z.size(0)
 
-        # Handle target times
-        if target_times is None:
-            # Fallback to a default sequence of times between 0 and 1
+        # query_times takes precedence over target_times for interface compatibility
+        times = query_times if query_times is not None else target_times
+        if times is None:
             base = torch.linspace(0.0, 1.0, self.default_seq_len, device=z.device, dtype=z.dtype)
-            target_times = base.unsqueeze(0).expand(batch_size, -1)
-        elif target_times.dim() != 2 or target_times.size(0) != batch_size:
-            raise ValueError("target_times must have shape (batch, seq_len)")
+            times = base.unsqueeze(0).expand(batch_size, -1)
+        elif times.dim() != 2 or times.size(0) != batch_size:
+            raise ValueError("target_times / query_times must have shape (batch, seq_len)")
+        target_times = times
 
         seq_len = target_times.size(1)
 
@@ -121,8 +123,10 @@ class TSIrregularDecoder(nn.Module):
         ts_recon = self.output_head(h)
 
         return {
-            "ts_recon": ts_recon,
-            "target_times": target_times,
+            "ts_recon":       ts_recon,
+            "target_times":   target_times,
+            "query_times":    target_times,   # alias for interface compatibility with IrregularTSDecoder
+            "ts_mask_logits": None,           # not implemented in this decoder
         }
 
 

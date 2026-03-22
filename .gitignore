@@ -34,3 +34,14 @@ checkpoints/
 *.pt
 *.pth
 *.ckpt
+
+# Data — raw and processed files (large, not versioned)
+data/raw/
+data/processed/
+data/Data/
+data/mimic-iv-clinical-database-demo-2.2/
+data/*.pkl
+data/*.csv
+
+# Generated outputs
+outputs/

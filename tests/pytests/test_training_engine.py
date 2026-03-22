@@ -62,6 +62,8 @@ def test_train_step_returns_finite_metrics_and_updates_params():
     assert set(metrics.keys()) == {
         "num_reconstruction",
         "cat_reconstruction",
+        "ts_reconstruction",
+        "ts_mask_reconstruction",
         "reconstruction",
         "kl",
         "balance",
@@ -81,6 +83,8 @@ def test_evaluate_step_returns_finite_metrics():
     assert set(metrics.keys()) == {
         "num_reconstruction",
         "cat_reconstruction",
+        "ts_reconstruction",
+        "ts_mask_reconstruction",
         "reconstruction",
         "kl",
         "balance",
