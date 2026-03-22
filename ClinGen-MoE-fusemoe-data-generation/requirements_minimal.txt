@@ -1,0 +1,16 @@
+# Minimal environment for FuseMoE-based multimodal generator MVP
+# Core
+torch>=2.1
+numpy>=1.24
+
+# Utilities
+tqdm>=4.66
+pyyaml>=6.0
+
+# Data handling
+pandas>=2.0
+scikit-learn>=1.3
+
+# Optional but useful for experiments
+matplotlib>=3.7
+einops>=0.7
