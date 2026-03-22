@@ -57,6 +57,10 @@ This is a research MVP, not yet a full production-ready generative framework.
 fusemoe_gen/
 ├─ README.md
 ├─ requirements.txt
+├─ run_all_pytests.sh 
+├─ run_all_smokes.sh 
+├─ generate_mimic.py
+├─ train_mimic.py
 ├─ LLM_CONTEXT.md
 ├─ data/
 │  ├─ generate_synthetic_ts_tab.py
@@ -70,6 +74,7 @@ fusemoe_gen/
 ├─ src/
 │  ├─ __init__.py
 │  ├─ data/
+|  │  ├─ mimic_dataset.py 
 │  │  └─ datasets.py
 │  ├─ models/
 │  │  ├─ __init__.py
@@ -87,6 +92,7 @@ fusemoe_gen/
 │  │  │  └─ posterior.py
 │  │  ├─ decoders/
 │  │  │  ├─ __init__.py
+│  │  |  ├─ timeseries_decoder.py    
 │  │  │  └─ tabular_decoder.py
 │  ├─ losses/
 │  │  ├─ __init__.py
@@ -104,6 +110,7 @@ fusemoe_gen/
    |  ├─ test_datasets.py
    |  ├─ test_sparse_moe_fusion.py
    |  ├─ test_ts_encoder.py
+   |  ├─ test_timeseries_decoder.py
    |  ├─ test_tabular_reconstruction.py
    |  ├─ test_tabular_encoder.py
    |  ├─ test_tabular_decoder.py
@@ -113,6 +120,8 @@ fusemoe_gen/
       ├─ smokeFusion.py
       ├─ smokePosterior.py
       ├─ smokeSyntData.py
+      ├─ smoke_train_step.py
+      ├─ smoke_ts_decoder.py
       └─ smokeTabDecoder.py 
 ```
 
