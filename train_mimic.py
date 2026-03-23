@@ -52,12 +52,13 @@ MODEL_DIM      = 64          # fusion model dim  (= PosteriorHead input_dim)
 LATENT_DIM     = 32
 
 # --- training ---
-BATCH_SIZE     = 16
-NUM_EPOCHS     = 30
-LR             = 1e-3
-BETA           = 1.0         # KL weight
-LAMBDA_BALANCE = 1e-2        # MoE load-balancing weight
-GRAD_CLIP      = 1.0
+BATCH_SIZE        = 16
+NUM_EPOCHS        = 150
+LR                = 1e-3
+BETA              = 1.0      # final KL weight (reached after warmup)
+KL_WARMUP_EPOCHS  = 40       # epochs over which beta linearly increases 0 -> BETA
+LAMBDA_BALANCE    = 1e-2     # MoE load-balancing weight
+GRAD_CLIP         = 1.0
 
 DATA_ROOT = ROOT / "data" / "processed" / "mimic_ts_tab"
 
@@ -162,18 +163,21 @@ def main() -> None:
     # -----------------------------------------------------------------------
     # Training loop
     # -----------------------------------------------------------------------
-    print(f"\nTraining for {NUM_EPOCHS} epochs...\n")
+    print(f"\nTraining for {NUM_EPOCHS} epochs (KL warmup: {KL_WARMUP_EPOCHS} epochs)...\n")
     print(f"{'epoch':>5}  {'train_total':>11}  {'train_recon':>11}  {'train_kl':>9}  "
-          f"{'val_total':>9}  {'val_recon':>9}")
-    print("-" * 65)
+          f"{'beta':>6}  {'val_total':>9}  {'val_recon':>9}")
+    print("-" * 75)
 
     for epoch in range(1, NUM_EPOCHS + 1):
+        # linear KL warmup: beta rises from 0 to BETA over KL_WARMUP_EPOCHS
+        beta_t = BETA * min(1.0, epoch / KL_WARMUP_EPOCHS)
+
         train_metrics = train_one_epoch(
             model=model,
             dataloader=train_loader,
             optimizer=optimizer,
             device=device,
-            beta=BETA,
+            beta=beta_t,
             lambda_balance=LAMBDA_BALANCE,
             grad_clip_norm=GRAD_CLIP,
         )
@@ -185,7 +189,7 @@ def main() -> None:
                 model=model,
                 batch=batch,
                 device=device,
-                beta=BETA,
+                beta=beta_t,
                 lambda_balance=LAMBDA_BALANCE,
             )
             for k, v in m.items():
@@ -197,6 +201,7 @@ def main() -> None:
             f"{train_metrics['total']:>11.4f}  "
             f"{train_metrics['reconstruction']:>11.4f}  "
             f"{train_metrics['kl']:>9.4f}  "
+            f"{beta_t:>6.3f}  "
             f"{val_metrics['total']:>9.4f}  "
             f"{val_metrics['reconstruction']:>9.4f}"
         )

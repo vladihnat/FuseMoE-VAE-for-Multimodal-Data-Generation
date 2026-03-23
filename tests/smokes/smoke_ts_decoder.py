@@ -17,7 +17,7 @@ from models.encoders.ts_irregular import TSIrregularEncoder
 from models.encoders.tabular import TabularEncoder
 from models.fusion.sparse_moe import FuseMoEFusion
 from models.latent.posterior import PosteriorHead
-from models.decoders.timeseries_decoder import TSIrregularDecoder
+from models.decoders.TS_decoder import IrregularTSDecoder
 
 print("Loading synthetic data...")
 loader = make_synthetic_ts_tab_dataloader(
@@ -56,12 +56,13 @@ posterior = PosteriorHead(
     latent_dim=8,
 )
 
-ts_decoder = TSIrregularDecoder(
+ts_decoder = IrregularTSDecoder(
     latent_dim=8,
     output_dim=batch["ts_values"].shape[-1],
     embed_time=16,
-    hidden_dims=(32, 32),
-    default_seq_len=batch["ts_values"].shape[1],
+    hidden_dim=32,
+    hidden_layers=(32,),
+    num_query_steps=batch["ts_values"].shape[1],
 )
 
 print("Running forward pass up to posterior...")
@@ -79,22 +80,21 @@ tab_tensor = tab_out["embedding"] if "embedding" in tab_out else tab_out["pooled
 
 fused = fusion({"ts": ts_out["pooled"], "tab": tab_tensor})
 
-# FIX: We now know the fusion module outputs the final representation under 'pooled'
 fused_tensor = fused["pooled"]
 
 post_out = posterior(fused_tensor)
 z = post_out["z"]
 
 print("Running TS Decoder...")
-# Test 1: Let the decoder use its default internal target times
+# Test 1: Let the decoder use its default uniform query times
 recon_default = ts_decoder(z=z)
 
 # Test 2: Condition the decoder on the exact timesteps from the batch
-recon_custom = ts_decoder(z=z, target_times=batch["ts_times"])
+recon_custom = ts_decoder(z=z, query_times=batch["ts_times"])
 
 print("\n--- Output Shapes ---")
 print("z:                 ", z.shape)
 print("recon_default:     ", recon_default["ts_recon"].shape)
 print("recon_custom:      ", recon_custom["ts_recon"].shape)
-print("recon_target_times:", recon_custom["target_times"].shape)
+print("recon_query_times: ", recon_custom["query_times"].shape)
 print("Smoke test passed successfully!")

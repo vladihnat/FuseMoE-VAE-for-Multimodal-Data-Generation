@@ -27,6 +27,7 @@ if str(src) not in sys.path:
 # ---------------------------------------------------------------------------
 # Imports
 # ---------------------------------------------------------------------------
+import json
 import numpy as np
 import pandas as pd
 import torch
@@ -55,6 +56,7 @@ N_SAMPLES       = 500          # number of synthetic patients to generate
 QUERY_STEPS     = 48           # number of TS timesteps per generated sample
 
 CHECKPOINT_PATH = ROOT / "checkpoints" / "mimic_vae.pt"
+STATS_PATH      = ROOT / "data" / "processed" / "mimic_ts_tab" / "normalization_stats.json"
 OUTPUT_DIR      = ROOT / "outputs"
 
 # ---------------------------------------------------------------------------
@@ -208,6 +210,22 @@ def main() -> None:
     print("  Checkpoint loaded.")
 
     # -----------------------------------------------------------------------
+    # Load normalization stats
+    # -----------------------------------------------------------------------
+    if not STATS_PATH.exists():
+        raise FileNotFoundError(
+            f"Normalization stats not found: {STATS_PATH}\n"
+            "Run 'python data/preprocess_data.py' first."
+        )
+    with open(STATS_PATH) as f:
+        stats = json.load(f)
+    ts_mean  = np.array(stats["ts_mean"],      dtype=np.float32)   # (24,)
+    ts_std   = np.array(stats["ts_std"],       dtype=np.float32)   # (24,)
+    tab_mean = np.array(stats["tab_num_mean"], dtype=np.float32)   # (1,)
+    tab_std  = np.array(stats["tab_num_std"],  dtype=np.float32)   # (1,)
+    print("  Normalization stats loaded.")
+
+    # -----------------------------------------------------------------------
     # Generate
     # -----------------------------------------------------------------------
     print(f"\nGenerating {N_SAMPLES} synthetic samples...")
@@ -219,6 +237,13 @@ def main() -> None:
     ts_recon    = generated["ts_recon"].cpu().numpy()         # (N, T, 24)
     ts_mask     = generated["ts_mask"].cpu().numpy()          # (N, T, 24)
     query_times = generated["query_times"].cpu().numpy()      # (N, T)
+
+    # -----------------------------------------------------------------------
+    # Denormalize back to original clinical scale
+    # -----------------------------------------------------------------------
+    tab_num  = tab_num  * tab_std  + tab_mean          # (N, 1)
+    ts_recon = ts_recon * ts_std   + ts_mean           # (N, T, 24) broadcast over features
+    print("  Outputs denormalized to original clinical scale.")
 
     print(f"  tab_num  shape : {tab_num.shape}")
     print(f"  tab_cat  shape : {tab_cat.shape}")

@@ -12,6 +12,7 @@ Usage:
     python preprocess_data.py
 """
 
+import json
 import os
 import pickle
 import numpy as np
@@ -22,6 +23,7 @@ from preprocess_demo_data import (
     load_raw_data,
     build_item_maps,
     extract_stay_timeseries,
+    ALL_FEATURE_NAMES,
     MIN_LOS_DAYS,
     NUM_FEATURES,
 )
@@ -186,7 +188,57 @@ def build_records(icustays, admissions, patients, vital_itemids, lab_itemids,
 
 
 # ===========================================================================
-# Step 3: Split and save
+# Step 3: Normalization
+# ===========================================================================
+def compute_normalization_stats(train_records):
+    """Compute per-feature mean and std from observed values in the training set only."""
+    print("\n=== Computing normalization statistics from training set ===")
+
+    ts_mean = np.zeros(NUM_FEATURES, dtype=np.float32)
+    ts_std  = np.ones(NUM_FEATURES,  dtype=np.float32)
+
+    for f in range(NUM_FEATURES):
+        observed = []
+        for r in train_records:
+            mask_f = r["ts_mask"][:, f]
+            vals_f = r["ts_values"][:, f]
+            observed.extend(vals_f[mask_f == 1.0].tolist())
+        if len(observed) > 1:
+            ts_mean[f] = float(np.mean(observed))
+            ts_std[f]  = float(max(np.std(observed), 1e-6))
+        print(f"  {ALL_FEATURE_NAMES[f]:>35s}: mean={ts_mean[f]:8.3f}  std={ts_std[f]:8.3f}  "
+              f"n_obs={len(observed)}")
+
+    ages = [float(r["tab_num"][0]) for r in train_records]
+    tab_num_mean = [float(np.mean(ages))]
+    tab_num_std  = [float(max(np.std(ages), 1e-6))]
+    print(f"  {'anchor_age':>35s}: mean={tab_num_mean[0]:8.3f}  std={tab_num_std[0]:8.3f}")
+
+    return {
+        "ts_mean":      ts_mean.tolist(),
+        "ts_std":       ts_std.tolist(),
+        "tab_num_mean": tab_num_mean,
+        "tab_num_std":  tab_num_std,
+    }
+
+
+def apply_normalization(records, stats):
+    """Apply z-score normalization in place. Unobserved TS positions remain zero."""
+    ts_mean  = np.array(stats["ts_mean"],      dtype=np.float32)
+    ts_std   = np.array(stats["ts_std"],       dtype=np.float32)
+    tab_mean = np.array(stats["tab_num_mean"], dtype=np.float32)
+    tab_std  = np.array(stats["tab_num_std"],  dtype=np.float32)
+
+    for r in records:
+        # normalize only observed positions; unobserved stay at 0
+        r["ts_values"] = (r["ts_values"] - ts_mean) / ts_std * r["ts_mask"]
+        r["tab_num"]   = (r["tab_num"] - tab_mean) / tab_std
+
+    return records
+
+
+# ===========================================================================
+# Step 4: Split and save
 # ===========================================================================
 def split_and_save(records):
     print(f"\n=== Splitting and saving to {OUTPUT_DIR} ===")
@@ -206,6 +258,17 @@ def split_and_save(records):
         print("  NOTE: Too few positive samples for stratified split, using random split")
         train_data, temp_data = train_test_split(records, test_size=0.4, random_state=42)
         val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
+
+    # --- normalization: fit on train, apply to all splits ---
+    stats = compute_normalization_stats(train_data)
+    for split_data in [train_data, val_data, test_data]:
+        apply_normalization(split_data, stats)
+
+    # --- save normalization stats ---
+    stats_path = os.path.join(OUTPUT_DIR, "normalization_stats.json")
+    with open(stats_path, "w") as f:
+        json.dump(stats, f, indent=2)
+    print(f"\n  Normalization stats saved -> {stats_path}")
 
     splits = {"train": train_data, "val": val_data, "test": test_data}
 

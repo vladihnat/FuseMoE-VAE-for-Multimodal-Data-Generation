@@ -12,34 +12,34 @@ def _load_decoder_class():
         raise FileNotFoundError(f"Could not find src directory at: {src_path}")
 
     sys.path.insert(0, str(src_path))
-    from models.decoders.timeseries_decoder import TSIrregularDecoder
-    return TSIrregularDecoder
+    from models.decoders.TS_decoder import IrregularTSDecoder
+    return IrregularTSDecoder
 
 
-TSIrregularDecoder = _load_decoder_class()
+IrregularTSDecoder = _load_decoder_class()
 
 
-def test_decoder_default_target_times():
-    decoder = TSIrregularDecoder(latent_dim=8, output_dim=6, default_seq_len=24, hidden_dims=(32,))
+def test_decoder_default_query_times():
+    decoder = IrregularTSDecoder(latent_dim=8, output_dim=6, num_query_steps=24, hidden_dim=32, hidden_layers=())
     z = torch.randn(4, 8)
     out = decoder(z)
 
     assert out["ts_recon"].shape == (4, 24, 6)
-    assert out["target_times"].shape == (4, 24)
+    assert out["query_times"].shape == (4, 24)
 
 
-def test_decoder_custom_target_times():
-    decoder = TSIrregularDecoder(latent_dim=8, output_dim=6, hidden_dims=(32,))
+def test_decoder_custom_query_times():
+    decoder = IrregularTSDecoder(latent_dim=8, output_dim=6, hidden_dim=32, hidden_layers=())
     z = torch.randn(5, 8)
-    target_times = torch.rand(5, 15)
-    out = decoder(z, target_times=target_times)
+    query_times = torch.rand(5, 15)
+    out = decoder(z, query_times=query_times)
 
     assert out["ts_recon"].shape == (5, 15, 6)
-    assert out["target_times"].shape == (5, 15)
+    assert out["query_times"].shape == (5, 15)
 
 
 def test_invalid_z_shape_raises():
-    decoder = TSIrregularDecoder(latent_dim=8, output_dim=6, hidden_dims=(32,))
+    decoder = IrregularTSDecoder(latent_dim=8, output_dim=6, hidden_dim=32, hidden_layers=())
     bad_z = torch.randn(4, 7)
 
     with pytest.raises(ValueError, match="z must have shape"):
@@ -47,16 +47,16 @@ def test_invalid_z_shape_raises():
 
 
 def test_invalid_target_times_shape_raises():
-    decoder = TSIrregularDecoder(latent_dim=8, output_dim=6, hidden_dims=(32,))
+    decoder = IrregularTSDecoder(latent_dim=8, output_dim=6, hidden_dim=32, hidden_layers=())
     z = torch.randn(4, 8)
     bad_times = torch.rand(3, 15)
 
-    with pytest.raises(ValueError, match="target_times must have shape"):
-        decoder(z, target_times=bad_times)
+    with pytest.raises(ValueError, match="query_times must have shape"):
+        decoder(z, query_times=bad_times)
 
 
 def test_backward_runs():
-    decoder = TSIrregularDecoder(latent_dim=8, output_dim=6, hidden_dims=(32,))
+    decoder = IrregularTSDecoder(latent_dim=8, output_dim=6, hidden_dim=32, hidden_layers=())
     z = torch.randn(4, 8, requires_grad=True)
     out = decoder(z)
 

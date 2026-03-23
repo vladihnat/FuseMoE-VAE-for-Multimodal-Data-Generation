@@ -14,7 +14,7 @@ import torch
 
 from data.datasets import make_synthetic_ts_tab_dataloader
 from models.decoders.tabular_decoder import TabularDecoder
-from models.decoders.timeseries_decoder import TSIrregularDecoder
+from models.decoders.TS_decoder import IrregularTSDecoder
 from models.encoders.tabular import TabularEncoder
 from models.encoders.ts_irregular import TSIrregularEncoder
 from models.fusion.sparse_moe import FuseMoEFusion
@@ -60,12 +60,13 @@ tabular_decoder = TabularDecoder(
 )
 
 # Initialize the new Time-Series Decoder
-ts_decoder = TSIrregularDecoder(
+ts_decoder = IrregularTSDecoder(
     latent_dim=8,
     output_dim=batch["ts_values"].shape[-1],
     embed_time=16,
-    hidden_dims=(32, 32),
-    default_seq_len=batch["ts_values"].shape[1],
+    hidden_dim=32,
+    hidden_layers=(32,),
+    num_query_steps=batch["ts_values"].shape[1],
 )
 
 # Pass both decoders to the MultimodalVAE

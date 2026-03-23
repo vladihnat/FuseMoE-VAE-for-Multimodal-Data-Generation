@@ -35,7 +35,7 @@ checkpoints/
 *.pth
 *.ckpt
 
-# Data — raw and processed files (large, not versioned)
+# Data — raw and processed files
 data/raw/
 data/processed/
 data/Data/

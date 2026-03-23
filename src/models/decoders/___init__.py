@@ -1,4 +1,4 @@
 from .tabular_decoder import TabularDecoder
-from .timeseries_decoder import TSIrregularDecoder
+from .TS_decoder import IrregularTSDecoder
 
-__all__ = ["TabularDecoder", "TSIrregularDecoder"]
+__all__ = ["TabularDecoder", "IrregularTSDecoder"]
