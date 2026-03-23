@@ -39,8 +39,9 @@ ClinGen-MoE/
 │   ├── generated_samples.pkl                  ← created by generate_mimic.py
 │   ├── generated_tabular.csv
 │   └── generated_ts.csv
-├── train_mimic.py
-└── generate_mimic.py
+├── scripts/ 
+│   ├── train_mimic.py             
+│   ├── generate_mimic.py
 ```
 
 ---
@@ -129,7 +130,7 @@ Trains the multimodal VAE on the preprocessed MIMIC data.
 ### Run
 
 ```bash
-python train_mimic.py
+python scripts/train_mimic.py
 ```
 
 ---
@@ -163,7 +164,7 @@ Generated values are denormalized back to the original clinical scale using the 
 ### Run
 
 ```bash
-python generate_mimic.py
+python scripts/generate_mimic.py
 ```
 
 ---
